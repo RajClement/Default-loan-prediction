@@ -1,0 +1,174 @@
+import pandas as pd
+from sklearn.preprocessing import LabelEncoder, OneHotEncoder, StandardScaler
+from imblearn.over_sampling import SMOTE
+from sklearn.model_selection import train_test_split
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.metrics import classification_report, confusion_matrix, roc_auc_score, precision_recall_curve
+import numpy as np
+import matplotlib.pyplot as plt
+
+# List of ordinal categorical columns to be label encoded
+ordinal_columns = ['Employment_Status']  # Example, adjust based on your dataset
+
+# Apply Label Encoding
+label_encoders = {}
+for col in ordinal_columns:
+    le = LabelEncoder()
+    df[col] = le.fit_transform(df[col])
+    label_encoders[col] = le  # Store the label encoder for future use or inverse transformation
+
+# List of nominal categorical columns to be one-hot encoded
+nominal_columns = ['Gender', 'Location']  # Example, adjust based on your dataset
+
+# One-Hot Encoding without dropping the first column to understand the full set of generated features
+encoder = OneHotEncoder(sparse_output=False)
+encoded_features = encoder.fit_transform(df[nominal_columns])
+
+# Inspect the shape and content of encoded features
+encoded_feature_names = encoder.get_feature_names_out(nominal_columns)
+
+# Create a DataFrame with the encoded features using the correct number of columns
+encoded_df = pd.DataFrame(encoded_features, columns=encoded_feature_names)
+
+# Combine encoded features with the original DataFrame, excluding the original nominal columns
+df_encoded = pd.concat([df.drop(nominal_columns, axis=1), encoded_df], axis=1)
+
+# Encode the target variable 'Loan_Status'
+le_status = LabelEncoder()
+df_encoded['Loan_Status'] = le_status.fit_transform(df_encoded['Loan_Status'])
+
+# List of numerical columns to be scaled
+numerical_columns = ['Age', 'Income', 'Credit_Score', 'Debt_to_Income_Ratio', 
+                     'Existing_Loan_Balance', 'Loan_Amount', 'Interest_Rate', 'Loan_Duration_Months']
+
+scaler = StandardScaler()
+df_encoded[numerical_columns] = scaler.fit_transform(df_encoded[numerical_columns])
+
+# Handle class imbalance
+X = df_encoded.drop('Loan_Status', axis=1)
+y = df_encoded['Loan_Status']
+
+# Apply SMOTE
+smote = SMOTE(random_state=42)
+X_resampled, y_resampled = smote.fit_resample(X, y)
+
+# Split the data
+X_train, X_test, y_train, y_test = train_test_split(X_resampled, y_resampled, test_size=0.3, random_state=42)
+
+# Train the model
+model = RandomForestClassifier(random_state=42)
+model.fit(X_train, y_train)
+
+# Make predictions
+y_pred = model.predict(X_test)
+y_scores = model.predict_proba(X_test)[:, 1]
+
+# Evaluate the model
+print(classification_report(y_test, y_pred))
+print(confusion_matrix(y_test, y_pred))
+print("ROC-AUC Score:", roc_auc_score(y_test, y_scores))
+
+# Calculate precision-recall curve
+precisions, recalls, thresholds = precision_recall_curve(y_test, y_scores)
+
+# Plot precision-recall vs threshold
+plt.plot(thresholds, precisions[:-1], 'b--', label='Precision')
+plt.plot(thresholds, recalls[:-1], 'g-', label='Recall')
+plt.xlabel('Threshold')
+plt.legend(loc='best')
+plt.show()
+
+# Select a threshold
+optimal_threshold = thresholds[np.argmax(precisions + recalls)]
+y_pred_threshold = (y_scores >= optimal_threshold).astype(int)
+
+
+
+
+
+
+
+
+
+
+
+from sklearn.model_selection import GridSearchCV
+
+# Define the parameter grid
+param_grid = {
+    'n_estimators': [100, 200, 300],
+    'max_depth': [None, 10, 20, 30],
+    'min_samples_split': [2, 5, 10],
+    'min_samples_leaf': [1, 2, 4]
+}
+
+# Initialize the GridSearchCV object
+grid_search = GridSearchCV(estimator=model, param_grid=param_grid, cv=5, n_jobs=-1, scoring='roc_auc')
+
+# Fit to the training data
+grid_search.fit(X_train, y_train)
+
+# Print the best parameters and best score
+print(f"Best Parameters: {grid_search.best_params_}")
+print(f"Best ROC-AUC Score: {grid_search.best_score_}")
+
+# Use the best estimator for predictions
+best_model = grid_search.best_estimator_
+y_pred_best = best_model.predict(X_test)
+y_scores_best = best_model.predict_proba(X_test)[:, 1]
+
+# Evaluate the model
+print(classification_report(y_test, y_pred_best))
+print(confusion_matrix(y_test, y_pred_best))
+print("ROC-AUC Score:", roc_auc_score(y_test, y_scores_best))
+
+
+
+
+
+
+
+import matplotlib.pyplot as plt
+
+# Get feature importances
+feature_importances = best_model.feature_importances_
+features = X_train.columns
+
+# Create a DataFrame for better visualization
+importance_df = pd.DataFrame({
+    'Feature': features,
+    'Importance': feature_importances
+})
+
+# Sort the DataFrame by importance
+importance_df = importance_df.sort_values(by='Importance', ascending=False)
+
+# Plot feature importances
+plt.figure(figsize=(10, 6))
+plt.barh(importance_df['Feature'], importance_df['Importance'])
+plt.xlabel('Importance')
+plt.ylabel('Feature')
+plt.title('Feature Importances')
+plt.gca().invert_yaxis()
+plt.show()
+
+
+
+
+
+from sklearn.model_selection import cross_val_score
+
+# Perform cross-validation
+cv_scores = cross_val_score(best_model, X_train, y_train, cv=5, scoring='roc_auc')
+
+# Print the cross-validation scores and their mean
+print(f"Cross-Validation Scores: {cv_scores}")
+print(f"Mean ROC-AUC Score: {cv_scores.mean()}")
+
+
+
+
+
+
+
+

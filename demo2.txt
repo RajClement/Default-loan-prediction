@@ -1,0 +1,172 @@
+import seaborn as sns
+import matplotlib.pyplot as plt
+
+plt.figure(figsize=(12, 8))
+sns.heatmap(correlation_matrix, annot=True, cmap='coolwarm', fmt='.2f')
+plt.title('Correlation Matrix')
+plt.show()
+
+
+
+
+missing_values = df.isnull().sum()
+print(missing_values[missing_values > 0])
+
+
+
+# Impute missing values with 'Unknown'
+df['Gender'].fillna('Unknown', inplace=True)
+
+print(df['Gender'].isnull().sum()) 
+
+
+# Impute missing values with 'Unknown'
+df['Employment_Status'].fillna('Unknown', inplace=True)
+
+print(df['Employment_Status'].isnull().sum())
+
+
+df.isna().sum()
+
+
+df.duplicated().sum()
+
+
+import numpy as np
+
+# Define numerical features
+numerical_features = df.select_dtypes(include=['float64', 'int64']).columns
+
+# Calculate Q1 (25th percentile) and Q3 (75th percentile)
+Q1 = df[numerical_features].quantile(0.25)
+Q3 = df[numerical_features].quantile(0.75)
+IQR = Q3 - Q1
+
+# Identify outliers
+outliers = (df[numerical_features] < (Q1 - 1.5 * IQR)) | (df[numerical_features] > (Q3 + 1.5 * IQR))
+
+# Print outlier indices
+print("Outlier indices:\n", np.where(outliers))
+
+# Removing rows with outliers
+df_cleaned = df[~((df[numerical_features] < (Q1 - 1.5 * IQR)) | (df[numerical_features] > (Q3 + 1.5 * IQR))).any(axis=1)]
+
+# Check the number of rows before and after outlier removal
+print(f'Original data size: {df.shape}')
+print(f'Cleaned data size: {df_cleaned.shape}')
+
+
+
+
+# Display the imbalance
+print("Imbalance in Loan_Status column:\n", df['Loan_Status'].value_counts())
+imbalance_ratio = df['Loan_Status'].value_counts()['Non-Default'] / df['Loan_Status'].value_counts()['Default']
+print(f"Imbalance ratio: {imbalance_ratio}")
+
+
+import matplotlib.pyplot as plt
+import seaborn as sns
+
+# Set the aesthetic style for the plots
+sns.set(style='whitegrid')
+
+# Histograms for numerical features
+df.hist(figsize=(12, 10), bins=30, edgecolor='black')
+plt.suptitle('Histograms of Numerical Features')
+plt.show()
+
+
+
+# Box plots to identify outliers
+plt.figure(figsize=(12, 6))
+sns.boxplot(data=df)
+plt.xticks(rotation=90)
+plt.title('Box Plots of Features')
+plt.show()
+
+
+# Pairplot for understanding relationships between features
+sns.pairplot(df, hue='Loan_Status')  # Assuming 'Loan_Status' is the target variable
+plt.suptitle('Pairplot of Features')
+plt.show()
+
+
+# Count plots for categorical features
+plt.figure(figsize=(12, 6))
+for i, column in enumerate(['Gender', 'Employment_Status', 'Location', 'Loan_Status']):
+    plt.subplot(2, 2, i + 1)
+    sns.countplot(data=df, x=column)
+    plt.title(f'Count Plot of {column}')
+    plt.xticks(rotation=45)
+plt.tight_layout()
+plt.show()
+
+
+import matplotlib.pyplot as plt
+import seaborn as sns
+
+plt.figure(figsize=(12, 8))
+
+# Gender
+plt.subplot(2, 2, 1)
+sns.countplot(x='Gender', data=df)
+plt.title('Distribution of Gender')
+
+# Employment_Status
+plt.subplot(2, 2, 2)
+sns.countplot(x='Employment_Status', data=df)
+plt.title('Distribution of Employment Status')
+
+# Location
+plt.subplot(2, 2, 3)
+sns.countplot(x='Location', data=df)
+plt.title('Distribution of Location')
+
+# Loan_Status
+plt.subplot(2, 2, 4)
+sns.countplot(x='Loan_Status', data=df)
+plt.title('Distribution of Loan Status')
+
+plt.tight_layout()
+plt.show()
+
+
+
+# Box plots for numerical features to check for outliers
+numerical_columns = ['Age', 'Income', 'Credit_Score', 'Debt_to_Income_Ratio', 
+                      'Existing_Loan_Balance', 'Loan_Amount', 'Interest_Rate', 'Loan_Duration_Months']
+
+plt.figure(figsize=(14, 10))
+for i, col in enumerate(numerical_columns):
+    plt.subplot(3, 3, i + 1)
+    sns.boxplot(df[col])
+    plt.title(f'Box plot for {col}')
+plt.tight_layout()
+plt.show()
+
+# Histograms for numerical features to check distributions
+plt.figure(figsize=(14, 10))
+for i, col in enumerate(numerical_columns):
+    plt.subplot(3, 3, i + 1)
+    sns.histplot(df[col], bins=30, kde=True)
+    plt.title(f'Distribution of {col}')
+plt.tight_layout()
+plt.show()
+
+# Count plots for categorical features
+plt.figure(figsize=(14, 10))
+for i, col in enumerate(categorical_columns):
+    plt.subplot(2, 2, i + 1)
+    sns.countplot(x=df[col])
+    plt.title(f'Distribution of {col}')
+plt.tight_layout()
+plt.show()
+
+
+
+
+
+
+
+
+
